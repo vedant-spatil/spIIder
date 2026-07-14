@@ -37,45 +37,59 @@ def set_env_vars(var):
         os.environ[var] = value
 
 
-vars = ["OPENAI_API_KEY", "LANGCHAIN_API_KEY", "LANGCHAIN_TRACING_V2", "LANGCHAIN_ENDPOINT", "LANGCHAIN_PROJECT", "TAVILY_API_KEY", "OPENROUTER_API_KEY"]
+vars = ["OPENAI_API_KEY", "LANGCHAIN_API_KEY", "LANGCHAIN_TRACING_V2", "LANGCHAIN_ENDPOINT", "LANGCHAIN_PROJECT", "TAVILY_API_KEY", "OPENROUTER_API_KEY", "FREELLM_API_KEY", "FREELLM_BASE_URL", "FREELLM_MODEL"]
 
 for var in vars:
     set_env_vars(var)
 
-llm_4o = ChatOpenAI(
-    model="openai/gpt-4o",
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-    openai_api_base="https://openrouter.ai/api/v1",
-    temperature=0,
-    max_tokens=1000
-)
-llm_mini = ChatOpenAI(
-    model="openai/gpt-4o-mini",
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-    openai_api_base="https://openrouter.ai/api/v1",
-    temperature=0,
-    max_tokens=1000
-)
-llm_o3_mini = ChatOpenAI(
-    model="openai/o3-mini",
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-    openai_api_base="https://openrouter.ai/api/v1",
-    max_tokens=1000
-)
-llm_anthropic = ChatOpenAI(
-    model="anthropic/claude-3.5-sonnet",
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-    openai_api_base="https://openrouter.ai/api/v1",
-    temperature=0,
-    max_tokens=1000
-)
-llm_openai_o1 = ChatOpenAI(
-    model="openai/o1-preview",
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-    openai_api_base="https://openrouter.ai/api/v1",
-    temperature=1,
-    max_tokens=1000
-)
+def get_agent_llm(default_model: str, temperature: float | None = 0.0, max_tokens: int = 1000) -> ChatOpenAI:
+    freellm_api_key = os.getenv("FREELLM_API_KEY")
+    freellm_base_url = os.getenv("FREELLM_BASE_URL")
+    
+    if freellm_api_key and freellm_base_url:
+        custom_model = os.getenv("FREELLM_MODEL", "auto")
+        print(f"[FreeLLM] Configured: Using model '{custom_model}' at {freellm_base_url}")
+        model = custom_model
+        kwargs = {}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        return ChatOpenAI(
+            model=model,
+            openai_api_key=freellm_api_key,
+            openai_api_base=freellm_base_url,
+            max_tokens=max_tokens,
+            **kwargs
+        )
+        
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+    if openrouter_api_key:
+        print(f"[OpenRouter] Configured: Using model '{default_model}'")
+        kwargs = {}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        return ChatOpenAI(
+            model=default_model,
+            openai_api_key=openrouter_api_key,
+            openai_api_base="https://openrouter.ai/api/v1",
+            max_tokens=max_tokens,
+            **kwargs
+        )
+        
+    print(f"[OpenAI] Configured: Using model '{default_model.split('/')[-1]}'")
+    kwargs = {}
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    return ChatOpenAI(
+        model=default_model.split("/")[-1],
+        max_tokens=max_tokens,
+        **kwargs
+    )
+
+llm_4o = get_agent_llm("openai/gpt-4o", temperature=0, max_tokens=1000)
+llm_mini = get_agent_llm("openai/gpt-4o-mini", temperature=0, max_tokens=1000)
+llm_o3_mini = get_agent_llm("openai/o3-mini", temperature=None, max_tokens=1000) # temperature is None for reasoning models
+llm_anthropic = get_agent_llm("anthropic/claude-3.5-sonnet", temperature=0, max_tokens=1000)
+llm_openai_o1 = get_agent_llm("openai/o1-preview", temperature=1, max_tokens=1000)
 llm = llm_4o
 
 
