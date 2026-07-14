@@ -5,7 +5,7 @@ from typing import TypedDict, Annotated, List, Literal
 from playwright.async_api import Page
 from operator import add
 from pydantic import BaseModel, Field
-from Browser.spooderman_browser import SpoodermanBrowser
+from Browser.spiider_browser import SpiiderBrowser
 import asyncio
 from playwright.async_api import async_playwright
 from playwright.async_api import Page, Locator
@@ -25,8 +25,16 @@ from langchain_openai import OpenAIEmbeddings
 from langgraph.graph import START, END, StateGraph
 from IPython.display import Image, display
 import nltk
-
-
+import spacy
+try:
+    spacy.load("en_core_web_sm")
+except OSError:
+    try:
+        from spacy.cli import download
+        print("SpaCy model 'en_core_web_sm' not found. Downloading...")
+        download("en_core_web_sm")
+    except Exception as e:
+        print(f"Failed to auto-download SpaCy model: {e}")
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
@@ -135,7 +143,7 @@ class AgentState(TypedDict):
 
 async def setup_browser(go_to_page: str):
     print(f"Setting up browser for {go_to_page}")
-    browser = SpoodermanBrowser()
+    browser = SpiiderBrowser()
     browser, context = await browser.connect_to_chrome()
 
     page = await context.new_page()
@@ -758,7 +766,7 @@ async def annotate_page(state: AgentState):
 async def llm_call_node(state: AgentState):
 
     template = """ 
-        You are Spooderman, an autonomous AI agent designed to browse the web, interact with pages, and extract or aggregate information based on user queries—much like a human browsing the internet. You have access to the following tools:
+        You are Spiider, an autonomous AI agent designed to browse the web, interact with pages, and extract or aggregate information based on user queries—much like a human browsing the internet. You have access to the following tools:
             - Click Elements: Click on a specified element using its XPath. For links, open them in a new tab.
             - Type in Inputs: Type text into an input field identified by its XPath.
             - Scroll and Read (Scrape+RAG): Scroll down the page while scraping visible text and images to store in a vector database.
@@ -1064,7 +1072,7 @@ async def answer_node(state: AgentState):
 
     response = llm_o3_mini.invoke(messages)
 
-    return {"answer": response.content, "conversation_history": [f"User : {input}"]+[f"Spooderman : {response}"], "actions_taken" : [f"Research on {input} complete"]}
+    return {"answer": response.content, "conversation_history": [f"User : {input}"]+[f"Spiider : {response}"], "actions_taken" : [f"Research on {input} complete"]}
 
 
 # Empty RAG Store

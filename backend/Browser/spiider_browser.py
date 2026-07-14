@@ -1,4 +1,4 @@
-# spooderman_browser.py
+# spiider_browser.py
 import asyncio
 import platform
 from pathlib import Path
@@ -9,7 +9,7 @@ import os
 import aiohttp
 import socket
 
-class SpoodermanBrowser:
+class SpiiderBrowser:
     def __init__(self, 
                  user_data_dir: Optional[str] = None,
                  headless: bool = False,
@@ -42,7 +42,7 @@ class SpoodermanBrowser:
         self._playwright = await async_playwright().start()
         
         print("Starting Chrome with remote debugging...")
-        chrome_process = await self.launch_chrome_with_remote_debugging()
+        self.chrome_process = await self.launch_chrome_with_remote_debugging()
         
         await asyncio.sleep(3)  # Wait for Chrome to start
         
@@ -304,4 +304,11 @@ class SpoodermanBrowser:
             await self._browser.close()
         if self._playwright:
             await self._playwright.stop()
+        if hasattr(self, "chrome_process") and self.chrome_process:
+            try:
+                self.chrome_process.terminate()
+                await self.chrome_process.wait()
+                print("Chrome process terminated successfully")
+            except Exception as e:
+                print(f"Error terminating Chrome process: {e}")
 

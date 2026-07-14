@@ -23,14 +23,14 @@ export function ToggleSwitch({
           checked={enabled}
           onChange={onChange}
           className={cn(
-            enabled ? 'bg-indigo-500' : 'bg-zinc-700',
-            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-black'
+            'bg-black border border-zinc-800',
+            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-black'
           )}
         >
           <span
             className={cn(
               enabled ? 'translate-x-6' : 'translate-x-1',
-              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform'
+              'inline-block h-4 w-4 transform rounded-full bg-[#fafae8] transition-transform'
             )}
           />
         </Switch>

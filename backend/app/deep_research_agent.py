@@ -5,7 +5,7 @@ from typing import TypedDict, Annotated, List, Literal
 from playwright.async_api import Page, Locator
 from operator import add
 from pydantic import BaseModel, Field
-from Browser.spooderman_browser import SpoodermanBrowser
+from Browser.spiider_browser import SpiiderBrowser
 from playwright.async_api import async_playwright
 import asyncio
 import platform
@@ -22,8 +22,16 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import START, END, StateGraph
 from IPython.display import Image, display
-
-
+import spacy
+try:
+    spacy.load("en_core_web_sm")
+except OSError:
+    try:
+        from spacy.cli import download
+        print("SpaCy model 'en_core_web_sm' not found. Downloading...")
+        download("en_core_web_sm")
+    except Exception as e:
+        print(f"Failed to auto-download SpaCy model: {e}")
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
@@ -156,7 +164,7 @@ class AgentState(TypedDict):
 
 async def setup_browser(go_to_page: str):
     print(f"Setting up browser for {go_to_page}")
-    browser = SpoodermanBrowser()
+    browser = SpiiderBrowser()
     browser, context = await browser.connect_to_chrome()
 
     page = await context.new_page()
@@ -841,7 +849,7 @@ async def annotate_page(state: AgentState):
 async def llm_call_node(state: AgentState):
 
     template = """ 
-        You are Spooderman, an autonomous AI agent designed to browse the web, interact with pages, and extract or aggregate information based on user queries—much like a human browsing the internet. You have access to the following tools:
+        You are Spiider, an autonomous AI agent designed to browse the web, interact with pages, and extract or aggregate information based on user queries—much like a human browsing the internet. You have access to the following tools:
             - Click Elements: Click on a specified element using its XPath. For links, open them in a new tab.
             - Type in Inputs: Type text into an input field identified by its XPath.
             - Scroll and Read (Scrape+RAG): Scroll down the page while scraping visible text and images to store in a vector database.
@@ -1208,7 +1216,7 @@ async def compile_research(state: AgentState):
 
     
 
-    return {"final_answer": final_answer, "actions_taken": [f"Research Paper on {broader_research_paper_topic} completed"], "conversation_history": [f"User : {state['input']}"]+[f"Spooderman : {final_answer}"]}
+    return {"final_answer": final_answer, "actions_taken": [f"Research Paper on {broader_research_paper_topic} completed"], "conversation_history": [f"User : {state['input']}"]+[f"Spiider : {final_answer}"]}
     
     
 

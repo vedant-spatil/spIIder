@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ResponseDisplay } from '@/components/rover/ResponseDisplay';
 import { QueryInput } from '@/components/rover/QueryInput';
-import { ParticlesBackground } from '@/components/ui/ParticlesBackground';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 interface Message {
@@ -61,11 +60,10 @@ export default function RoverPage() {
         
         if (data.type === 'keepalive') return;
         
-        // Clean content if it matches the pattern
-        const cleanContent = (content: any) => {
-          // If content is already an array, return it directly
+        const cleanContent = (content: unknown): string => {
+          // If content is already an array, return it directly joined by newline
           if (Array.isArray(content)) {
-            return content;
+            return content.join('\n');
           }
           
           if (typeof content === 'string') {
@@ -73,7 +71,7 @@ export default function RoverPage() {
               // Try to parse as JSON
               const parsed = JSON.parse(content);
               if (Array.isArray(parsed)) {
-                return parsed;
+                return parsed.join('\n');
               }
               // If it's a string with ["..."] pattern
               if (content.startsWith('["') && content.endsWith('"]')) {
@@ -85,12 +83,13 @@ export default function RoverPage() {
                 return content.slice(2, -2);
               }
             }
+            return content;
           }
-          return content;
+          return String(content || '');
         };
 
-        const processedData = {
-          type: data.type,
+        const processedData: Message = {
+          type: data.type as Message['type'],
           content: cleanContent(data.content)
         };
         
@@ -180,11 +179,11 @@ export default function RoverPage() {
       }
 
       await handleStreamingResponse(response);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Query failed:', error);
       setMessages(prev => [...prev, { 
         type: 'error', 
-        content: error?.message || 'Failed to process query. Please try again.' 
+        content: error instanceof Error ? error.message : 'Failed to process query. Please try again.' 
       }]);
     } finally {
       setIsLoading(false);
@@ -192,42 +191,40 @@ export default function RoverPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950/20 to-black">
-      <ParticlesBackground />
+    <div className="relative min-h-screen bg-zinc-950">
       
       {/* Header with Toggles */}
-      <header className="fixed top-0 left-0 right-0 p-4 backdrop-blur-xl bg-black/30 z-50
-                      border-b border-zinc-800/50 shadow-lg shadow-black/20">
+      <header className="fixed top-0 left-0 right-0 p-4 backdrop-blur-md bg-zinc-950/80 z-50
+                      border-b border-zinc-900 shadow-sm">
         <div className="flex justify-between items-center max-w-[1600px] mx-auto">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 
-                        text-transparent bg-clip-text animate-flow bg-[length:200%_auto]">
-            Spooderman
+          <h1 className="text-2xl font-semibold text-[#fafae8] tracking-tight">
+            Sp//der
           </h1>
           
           <div className="flex-1 flex justify-center items-center">
             <div className="flex items-center space-x-24">
               <div className="flex flex-col items-center min-w-[280px]">
                 <div className="flex items-center space-x-6">
-                  <span className="text-zinc-400">Task</span>
+                  <span className="text-zinc-400 text-sm">Task</span>
                   <ToggleSwitch
                     enabled={isResearchMode}
                     onChange={setIsResearchMode}
                     label=""
                   />
-                  <span className="text-zinc-400">Research</span>
+                  <span className="text-zinc-400 text-sm">Research</span>
                 </div>
                 <span className="text-xs text-zinc-500 mt-2">Switch between Task and Research agents</span>
               </div>
               
               <div className={`flex flex-col items-center min-w-[280px] transition-opacity duration-300 ${isResearchMode ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="flex items-center space-x-6">
-                  <span className="text-zinc-400">Normal</span>
+                  <span className="text-zinc-400 text-sm">Normal</span>
                   <ToggleSwitch
                     enabled={isDeepResearch}
                     onChange={setIsDeepResearch}
                     label=""
                   />
-                  <span className="text-zinc-400">Deep Research</span>
+                  <span className="text-zinc-400 text-sm">Deep Research</span>
                 </div>
                 <span className="text-xs text-zinc-500 mt-2">Enable comprehensive research mode</span>
               </div>
@@ -236,11 +233,10 @@ export default function RoverPage() {
 
           <button
             onClick={handleDisconnect}
-            className="px-4 py-2 rounded-full whitespace-nowrap
-                     bg-gradient-to-r from-rose-500/10 to-pink-500/10
-                     border border-rose-500/50 text-rose-400
-                     hover:bg-rose-500/20 hover:border-rose-500/70 hover:text-rose-300
-                     transition-all duration-300"
+            className="px-4 py-2 rounded-full whitespace-nowrap text-sm
+                     bg-zinc-900 border border-zinc-800 text-zinc-400
+                     hover:bg-zinc-850 hover:text-[#fafae8] hover:border-zinc-700
+                     transition-all duration-200"
           >
             Disconnect Browser
           </button>
@@ -248,7 +244,7 @@ export default function RoverPage() {
       </header>
 
       {/* Input Bar */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-[800px] px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-40">
         <QueryInput
           value={query}
           onChange={setQuery}

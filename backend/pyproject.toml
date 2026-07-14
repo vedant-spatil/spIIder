@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "spooderman"
+name = "spider"
 version = "0.1.0"
-description = "Spooderman is an autonomous AI agent designed to interpret user input and execute actions by interacting with web elements to accomplish tasks or answer questions."
+description = "SP//dr is an autonomous AI agent designed to interpret user input and execute actions by interacting with web elements to accomplish tasks or answer questions."
 # Remove package-mode = false
 packages = [
     {include = "app"},

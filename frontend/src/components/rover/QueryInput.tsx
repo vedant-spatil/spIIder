@@ -1,5 +1,4 @@
-import { Button } from '../ui/Button';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 
 interface QueryInputProps {
   value: string;
@@ -34,22 +33,22 @@ export function QueryInput({ value, onChange, onSubmit, isLoading }: QueryInputP
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent">
-      <div className="max-w-4xl mx-auto pb-2">
-        <div className="relative flex items-start">
+    <div className="w-full p-6 pb-8 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent">
+      <div className="max-w-[800px] mx-auto">
+         <div className="relative flex items-start">
           <textarea
             ref={inputRef}
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyPress}
-            placeholder="Ask Spooderman anything..."
+            placeholder="Ask Sp//der anything..."
             rows={1}
-            className="w-full px-6 py-4 pr-24 bg-zinc-900/50 backdrop-blur-sm 
-                     border border-zinc-800 rounded-2xl
-                     text-zinc-100 placeholder-zinc-500
-                     focus:outline-none focus:ring-2 focus:ring-purple-500/50
-                     focus:border-purple-500/50
-                     hover:border-zinc-700 transition-all duration-300
+            className="w-full px-6 py-4 pr-24 bg-zinc-900/40 backdrop-blur-sm 
+                     border border-zinc-850 rounded-2xl
+                     text-[#fafae8] placeholder-zinc-505
+                     focus:outline-none focus:ring-1 focus:ring-zinc-700
+                     focus:border-zinc-700
+                     hover:border-zinc-850 transition-all duration-200
                      resize-none overflow-hidden min-h-[60px] max-h-[120px]"
           />
           
@@ -57,15 +56,14 @@ export function QueryInput({ value, onChange, onSubmit, isLoading }: QueryInputP
             onClick={onSubmit}
             disabled={isLoading || !value.trim()}
             className="absolute right-2 top-2 px-6 py-2.5 
-                     bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
-                     rounded-xl text-white font-medium
-                     hover:opacity-90 hover:shadow-lg hover:shadow-purple-500/25
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     transform hover:scale-[1.02] active:scale-[0.98]
-                     transition-all duration-300"
+                     bg-[#fafae8] hover:bg-[#fafae8]/90
+                     rounded-xl text-zinc-950 font-medium
+                     disabled:bg-zinc-900 disabled:text-zinc-650 disabled:opacity-50
+                     transform active:scale-[0.98]
+                     transition-all duration-200"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white/90 
+              <div className="w-5 h-5 border-2 border-zinc-950/30 border-t-zinc-950/90 
                            rounded-full animate-spin" />
             ) : (
               'Send'

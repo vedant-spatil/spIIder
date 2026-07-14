@@ -1,10 +1,9 @@
-import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState, useMemo, useRef, ReactNode } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { Components } from 'react-markdown';
 import { ResponseActions } from './ResponseActions';
 
@@ -20,33 +19,8 @@ interface ResponseDisplayProps {
   messages: Message[];
 }
 
-function useTemporaryMessages(messages: Message[]) {
-  const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
-
-  useEffect(() => {
-    const finalMessage = messages.find(m => 
-      m.type === 'final_answer' || m.type === 'final_response'
-    );
-
-    if (finalMessage) {
-      setVisibleMessages([]);
-      return;
-    }
-
-    const streamingMessages = messages.filter(m => 
-      m.type !== 'final_answer' && 
-      m.type !== 'final_response' && 
-      m.type !== 'user_input'
-    );
-    
-    setVisibleMessages(streamingMessages);
-  }, [messages]);
-
-  return visibleMessages;
-}
-
 // Helper function to stringify message content
-const formatMessageContent = (content: any) => {
+const formatMessageContent = (content: unknown) => {
   if (Array.isArray(content)) {
     return content.join('\n');
   }
@@ -67,105 +41,95 @@ const formatMessageContent = (content: any) => {
   return String(content);
 };
 
-interface MarkdownComponentProps {
-  children?: ReactNode;
-  className?: string;
-  inline?: boolean;
-  href?: string;
-  language?: string;
-  node?: any;
-  [key: string]: any;
-}
-
 export const markdownComponents: Components = {
-  h1: ({ children, ...props }: MarkdownComponentProps) => (
-    <h1 className="text-3xl font-bold mt-8 mb-6 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 
-                   text-transparent bg-clip-text" {...props}>
+  h1: ({ children, ...props }) => (
+    <h1 className="text-3xl font-bold mt-8 mb-6 text-[#fafae8]" {...props}>
       {children}
     </h1>
   ),
-  h2: ({ children, ...props }: MarkdownComponentProps) => (
-    <h2 className="text-2xl font-semibold mt-6 mb-4 text-indigo-300 
-                   border-b border-indigo-500/20 pb-2" {...props}>
+  h2: ({ children, ...props }) => (
+    <h2 className="text-2xl font-semibold mt-6 mb-4 text-[#fafae8]/90 
+                   border-b border-zinc-850 pb-2" {...props}>
       {children}
     </h2>
   ),
-  h3: ({ children, ...props }: MarkdownComponentProps) => (
-    <h3 className="text-xl font-medium mt-4 mb-3 text-purple-300" {...props}>
+  h3: ({ children, ...props }) => (
+    <h3 className="text-xl font-medium mt-4 mb-3 text-[#fafae8]/80" {...props}>
       {children}
     </h3>
   ),
-  p: ({ children, ...props }: MarkdownComponentProps) => (
-    <p className="text-zinc-100 leading-7 mb-4" {...props}>
+  p: ({ children, ...props }) => (
+    <p className="text-[#fafae8]/90 leading-7 mb-4" {...props}>
       {children}
     </p>
   ),
-  ul: ({ children, ...props }: MarkdownComponentProps) => (
+  ul: ({ children, ...props }) => (
     <ul className="my-4 space-y-2 list-none" {...props}>
       {children}
     </ul>
   ),
-  ol: ({ children, ...props }: MarkdownComponentProps) => (
+  ol: ({ children, ...props }) => (
     <ol className="my-4 space-y-2 list-decimal pl-4" {...props}>
       {children}
     </ol>
   ),
-  li: ({ children, ...props }: MarkdownComponentProps) => (
+  li: ({ children, ...props }) => (
     <li className="flex items-start" {...props}>
-      <span className="text-indigo-400 mr-2 font-bold">•</span>
-      <span className="text-zinc-100">{children}</span>
+      <span className="text-zinc-500 mr-2 font-bold">•</span>
+      <span className="text-[#fafae8]/90">{children}</span>
     </li>
   ),
-  blockquote: ({ children, ...props }: MarkdownComponentProps) => (
-    <blockquote className="border-l-4 border-indigo-500/50 bg-indigo-500/5 
-                          pl-6 py-4 my-6 rounded-r-lg italic text-zinc-300" {...props}>
+  blockquote: ({ children, ...props }) => (
+    <blockquote className="border-l-4 border-zinc-700 bg-zinc-900/30 
+                          pl-6 py-4 my-6 rounded-r-lg italic text-[#fafae8]/75" {...props}>
       {children}
     </blockquote>
   ),
-  code: ({ inline, className, children, ...props }: MarkdownComponentProps) => {
+  code: ({ className, children, ...props }) => {
     const match = /language-(\w+)/.exec(className || '');
-    return !inline && match ? (
+    const isInline = !className;
+    return !isInline && match ? (
       <SyntaxHighlighter
-        style={oneDark}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        style={oneDark as any}
         language={match[1]}
         PreTag="div"
-        className="!my-8 rounded-xl border border-white/10 !bg-zinc-900/50 !p-6"
-        {...props}
+        className="!my-8 rounded-xl border border-zinc-855 !bg-zinc-900/30 !p-6"
       >
         {String(children).replace(/\n$/, '')}
       </SyntaxHighlighter>
     ) : (
-      <code className="bg-zinc-800/50 px-2 py-1 rounded-md font-mono text-sm text-indigo-300" {...props}>
+      <code className="bg-zinc-800/30 px-2 py-1 rounded-md font-mono text-sm text-[#fafae8]/85" {...props}>
         {children}
       </code>
     );
   },
-  table: ({ children }: MarkdownComponentProps) => (
+  table: ({ children }) => (
     <div className="overflow-x-auto my-6">
       <table className="w-full border-collapse">
         {children}
       </table>
     </div>
   ),
-  th: ({ children }: MarkdownComponentProps) => (
-    <th className="text-left py-2 px-4 border-b border-zinc-800 text-indigo-300 font-semibold">
+  th: ({ children }) => (
+    <th className="text-left py-2 px-4 border-b border-zinc-850 text-[#fafae8]/80 font-semibold">
       {children}
     </th>
   ),
-  td: ({ children }: MarkdownComponentProps) => (
-    <td className="py-2 px-4 border-b border-zinc-800/50 text-zinc-100">
+  td: ({ children }) => (
+    <td className="py-2 px-4 border-b border-zinc-900/50 text-[#fafae8]/90">
       {children}
     </td>
   ),
-  a: ({ children, href, ...props }: MarkdownComponentProps) => (
+  a: ({ children, href, ...props }) => (
     <a 
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-indigo-400 hover:text-purple-400 underline decoration-indigo-500/30 
-                hover:decoration-purple-500/50 decoration-2 underline-offset-2 
+      className="text-[#fafae8]/85 hover:text-[#fafae8] underline decoration-zinc-800 
+                hover:decoration-zinc-650 decoration-2 underline-offset-2 
                 transition-all duration-200 font-medium
-                hover:scale-[1.02] inline-flex items-center gap-0.5" 
+                inline-flex items-center gap-0.5" 
       {...props}
     >
       {children}
@@ -257,10 +221,9 @@ export function ResponseDisplay({ messages }: ResponseDisplayProps) {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[90%] md:max-w-[75%] break-words bg-gradient-to-r from-indigo-500/20 
-                              via-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-indigo-500/30 
-                              rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg shadow-purple-500/10">
-                    <p className="text-sm font-medium text-white/90 whitespace-pre-wrap">
+                  <div className="max-w-[90%] md:max-w-[75%] break-words bg-zinc-900 
+                              border border-zinc-850 rounded-2xl rounded-tr-sm px-5 py-3 shadow-sm">
+                    <p className="text-sm font-medium text-[#fafae8] whitespace-pre-wrap">
                       {formatMessageContent(userMessage.content)}
                     </p>
                   </div>
@@ -288,7 +251,7 @@ export function ResponseDisplay({ messages }: ResponseDisplayProps) {
                           ? 'bg-emerald-500/10 border-emerald-500/30 shadow-emerald-500/20' 
                           : 'bg-zinc-500/10 border-zinc-500/30 shadow-zinc-500/20'} 
                         shadow-lg`}>
-                        <p className="text-sm text-white/70 whitespace-pre-wrap">
+                        <p className="text-sm text-[#fafae8]/70 whitespace-pre-wrap">
                           {formatMessageContent(message.content)}
                         </p>
                       </div>
@@ -304,9 +267,8 @@ export function ResponseDisplay({ messages }: ResponseDisplayProps) {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex flex-col justify-start"
                 >
-                  <div className="max-w-[95%] md:max-w-[85%] break-words bg-gradient-to-br from-indigo-500/20 
-                              via-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-indigo-500/30 
-                              rounded-2xl rounded-tl-sm px-6 py-4 shadow-xl shadow-indigo-500/20">
+                  <div className="max-w-[95%] md:max-w-[85%] break-words bg-zinc-900 
+                              border border-zinc-850 rounded-2xl rounded-tl-sm px-6 py-4 shadow-sm">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={markdownComponents}

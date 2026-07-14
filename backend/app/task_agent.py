@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 import os
-from Browser.spooderman_browser import SpoodermanBrowser  
+from Browser.spiider_browser import SpiiderBrowser  
 from typing import TypedDict, List, Annotated, Literal, Optional
 from operator import add
 from playwright.async_api import Page, Locator
@@ -132,7 +132,7 @@ llm = llm_4o
 
 async def setup_browser(go_to_page: str):
     print(f"Setting up browser for {go_to_page}")
-    browser = SpoodermanBrowser()
+    browser = SpiiderBrowser()
     browser, context = await browser.connect_to_chrome()
 
     page = await context.new_page()
@@ -269,11 +269,18 @@ async def master_plan_node(state: AgentState):
 # Scrape Text Node
 
 async def scrape_text(page):
-
-    text = await page.evaluate("""() => {
-        return document.body.innerText;
-    }""")
-    return text
+    try:
+        print("[DEBUG] Scraping text from the page...")
+        text = await page.evaluate("""() => {
+            return document.body.innerText;
+        }""")
+        if text and len(text) > 6000:
+            print(f"[DEBUG] Webpage innerText length is {len(text)}. Truncating to 6000 characters to prevent local LLM context overflow/hangs.")
+            return text[:6000] + "\n\n... [Text truncated for efficiency] ..."
+        return text or ""
+    except Exception as e:
+        print(f"[DEBUG] Error during page text scrape: {e}")
+        return ""
 
 
 # Annotate Elements Node
@@ -598,9 +605,9 @@ async def decide_immediate_action(state: AgentState):
 
     system_message = """ 
 
-        Spooderman is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
+        Spiider is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
         
-        You are a crucial part of Spooderman AI agent, whose job is to assess the steps you need to take on higher level inorder to perform actions that will interact with web elements.
+        You are a crucial part of Spiider AI agent, whose job is to assess the steps you need to take on higher level inorder to perform actions that will interact with web elements.
 
         To assess you with the answering what is the next best action, you will be given:
         1. User Input - The task that user wants to perform
@@ -648,11 +655,11 @@ async def decide_immediate_action(state: AgentState):
     actions_taken = state.get("actions_taken", "")
     page = state["page"]
 
-
     messages = [SystemMessage(content=system_message), HumanMessage(content=human_message.format(input=input, actions_taken= actions_taken, page=page, text_on_page=text_on_page))]
 
-
+    print(f"[DEBUG] Invoking decide_immediate_action LLM (model: {llm.model}). Prompt messages size: {len(str(messages))} chars...")
     response = llm.with_structured_output(DecideAction).invoke(messages)
+    print(f"[DEBUG] decide_immediate_action LLM responded: {response}")
 
     return {"decide_action": response, "chat_history": state.get("chat_history", [])}
 
@@ -672,9 +679,9 @@ async def decide_immediate_action_router(state: AgentState):
 
 async def interact_with_input_elements(state: AgentState):
     system_message = """ 
-    Spooderman is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
+    Spiider is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
 
-    You are a crucial part of Spooderman AI agent, whose job is to assess all the input elements on the current page and decide which one to interact with.
+    You are a crucial part of Spiider AI agent, whose job is to assess all the input elements on the current page and decide which one to interact with.
 
     To help you with the task, you will be given:
     1. All the input elements on the current page
@@ -712,9 +719,9 @@ async def interact_with_input_elements(state: AgentState):
 # Interact with Button Elements Node
 async def interact_with_button_elements(state: AgentState):
     system_message = """ 
-        Spooderman is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
+        Spiider is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
 
-        You are a crucial part of Spooderman AI agent, whose job is to assess all the button elements on the current page and decide which one to interact with.
+        You are a crucial part of Spiider AI agent, whose job is to assess all the button elements on the current page and decide which one to interact with.
 
         To help you with the task, you will be given:
         1. All the button elements on the current page
@@ -757,9 +764,9 @@ async def interact_with_button_elements(state: AgentState):
 
 async def interact_with_link_elements(state: AgentState):
     system_message =""" 
-        Spooderman is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
+        Spiider is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
 
-        You are a crucial part of Spooderman AI agent, whose job is to assess all the link elements on the current page and decide which one to interact with.
+        You are a crucial part of Spiider AI agent, whose job is to assess all the link elements on the current page and decide which one to interact with.
 
         To help you with the task, you will be given:
         1. All the link elements on the current page
@@ -1167,7 +1174,7 @@ async def respond(state: AgentState):
 
     text_on_page = await scrape_text(state["page"])
     system_message = """
-    Spooderman is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
+    Spiider is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
     
     Your job is to respond to the user based on the input, actions taken and the text on the page.
 
@@ -1196,7 +1203,9 @@ async def respond(state: AgentState):
 
     messages = [SystemMessage(content=system_message), HumanMessage(content=human_message.format(input=input, actions_taken=actions_taken, text_on_page=text_on_page))]
 
+    print(f"[DEBUG] Invoking respond LLM (model: {llm.model}). Prompt messages size: {len(str(messages))} chars...")
     response = llm.invoke(messages)
+    print(f"[DEBUG] respond LLM responded successfully.")
 
     return {"response": response.content}
 
@@ -1227,8 +1236,8 @@ async def type_in_text_editor(state: AgentState):
             response = state.get("response", "")
 
             system_message = """
-                Spooderman is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
-                You are a helpful assistant for Spooderman AI agent that can extract the content that needs to be typed in the text editor.
+                Spiider is an autonomous AI agent designed to browse the web, interact with pages, and complete tasks on behalf of user based on user input.
+                You are a helpful assistant for Spiider AI agent that can extract the content that needs to be typed in the text editor.
 
                 You will be given the following:
                 1. The user input

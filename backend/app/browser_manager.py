@@ -1,4 +1,4 @@
-from Browser.spooderman_browser import SpoodermanBrowser
+from Browser.spiider_browser import SpiiderBrowser
 from typing import Dict, Any, Tuple
 from playwright.async_api import Page, Browser
 
@@ -7,7 +7,7 @@ async def setup_browser(go_to_page: str) -> Tuple[Browser, Page]:
     Sets up a browser instance and returns the browser and page objects.
     """
     print(f"Setting up browser for {go_to_page}")
-    browser = SpoodermanBrowser()
+    browser = SpiiderBrowser()
     browser, context = await browser.connect_to_chrome()
 
     page = await context.new_page()
@@ -21,9 +21,9 @@ async def setup_browser(go_to_page: str) -> Tuple[Browser, Page]:
 
     return browser, page
 
-async def cleanup_browser_session(browser: SpoodermanBrowser) -> None:
+async def cleanup_browser_session(browser: SpiiderBrowser) -> None:
     """
-    Cleans up browser session using SpoodermanBrowser's close method.
+    Cleans up browser session using SpiiderBrowser's close method.
     This ensures proper cleanup of all resources including context, browser, and playwright.
     """
     try:
