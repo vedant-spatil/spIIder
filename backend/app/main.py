@@ -158,7 +158,19 @@ async def stream_task_agent_response(query: str, page, agent_graph):
                     if any(key in event for key in ["interact_with_input_elements", 
                                                   "interact_with_button_elements",
                                                   "interact_with_link_elements"]):
-                        actions = event[list(event.keys())[0]]["actions"]["element_actions"]
+                        actions_val = event[list(event.keys())[0]]["actions"]
+                        if isinstance(actions_val, list):
+                            if len(actions_val) > 0:
+                                actions = actions_val[0].get("element_actions", actions_val[0])
+                            else:
+                                actions = {}
+                        elif isinstance(actions_val, dict):
+                            actions = actions_val.get("element_actions", actions_val)
+                        else:
+                            actions = getattr(actions_val, "element_actions", actions_val)
+                            if hasattr(actions, "__dict__"):
+                                actions = actions.__dict__
+                        
                         actions_json = json.dumps(actions, ensure_ascii=False)
                         yield f"data: {{\n  \"type\": \"interaction\",\n  \"content\": {actions_json}\n}}\n\n"
                     

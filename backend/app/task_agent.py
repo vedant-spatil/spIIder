@@ -447,19 +447,22 @@ with open("marking_scripts/marking_input.js", "r", encoding="utf-8") as f:
     marking_script_input = f.read()
 
 async def execute_script_input(page):
-
+    print("[DEBUG] execute_script_input: Waiting 3s for page stability...")
     await asyncio.sleep(3)
     
-    # Run the JavaScript marking function
-    dom_tree = await page.evaluate(f"""
-        (function() {{
-            {marking_script_input}
-            return captureInteractiveElements();
-        }})();
-    """)
-
-        
-    return dom_tree
+    print("[DEBUG] execute_script_input: Evaluating marking script inside browser...")
+    try:
+        dom_tree = await page.evaluate(f"""
+            (function() {{
+                {marking_script_input}
+                return captureInteractiveElements();
+            }})();
+        """)
+        print(f"[DEBUG] execute_script_input: Successfully scraped {len(dom_tree) if dom_tree else 0} elements.")
+        return dom_tree
+    except Exception as e:
+        print(f"[DEBUG] execute_script_input: Error during evaluation: {e}")
+        return []
 
 async def remove_highlights_input(page):
 
@@ -509,11 +512,14 @@ async def remove_highlights_input(page):
     """)
 
 async def get_all_input_elements(state: AgentState):
+    print("[DEBUG] get_all_input_elements node started...")
     page = state["page"]
     dom_elements = await execute_script_input(page)
 
+    print("[DEBUG] get_all_input_elements: Removing highlights...")
     await remove_highlights_input(page)
 
+    print("[DEBUG] get_all_input_elements node complete.")
     return {"dom_elements": dom_elements, "actions_taken": ["Gathered dom elements of all the interactive input elements on the page"]}
 
 
@@ -652,12 +658,29 @@ async def decide_immediate_action(state: AgentState):
     """
 
     input = state["input"]
-    actions_taken = state.get("actions_taken", "")
+    actions_taken = state.get("actions_taken", [])
     page = state["page"]
+
+    # Loop protection: if the last 2 actions are click failures, force a respond
+    actions_taken_list = actions_taken if isinstance(actions_taken, list) else [str(actions_taken)]
+    consecutive_failures = 0
+    for action in reversed(actions_taken_list):
+        if "Failed to click" in action:
+            consecutive_failures += 1
+        else:
+            break
+            
+    if consecutive_failures >= 2:
+        print("[DEBUG] Loop detected! Click failed consecutively. Transitioning to respond to prevent infinite loops.")
+        response = {
+            "thought": "I have attempted to click the relevant links multiple times but the page failed to navigate. I will now inform the user.",
+            "step": "respond"
+        }
+        return {"decide_action": response, "chat_history": state.get("chat_history", [])}
 
     messages = [SystemMessage(content=system_message), HumanMessage(content=human_message.format(input=input, actions_taken= actions_taken, page=page, text_on_page=text_on_page))]
 
-    print(f"[DEBUG] Invoking decide_immediate_action LLM (model: {llm.model}). Prompt messages size: {len(str(messages))} chars...")
+    print(f"[DEBUG] Invoking decide_immediate_action LLM (model: {getattr(llm, 'model_name', 'unknown')}). Prompt messages size: {len(str(messages))} chars...")
     response = llm.with_structured_output(DecideAction).invoke(messages)
     print(f"[DEBUG] decide_immediate_action LLM responded: {response}")
 
@@ -805,10 +828,34 @@ async def interact_with_link_elements(state: AgentState):
     
 # Type / Type in Text Editor Node
 
+def _safe_get_action(actions_val):
+    if not actions_val:
+        return {}
+    if isinstance(actions_val, list):
+        if len(actions_val) > 0:
+            actions_val = actions_val[0]
+        else:
+            return {}
+            
+    if isinstance(actions_val, dict):
+        if "element_actions" in actions_val:
+            return actions_val["element_actions"]
+        elif "action_element" in actions_val:
+            return actions_val
+        return actions_val
+        
+    if hasattr(actions_val, "element_actions"):
+        action = getattr(actions_val, "element_actions")
+        if hasattr(action, "__dict__"):
+            return action.__dict__
+        return action
+        
+    return {}
+
 async def type(state: AgentState):
     """Types text into input fields."""
     page = state["page"]
-    input_action = state["actions"]["element_actions"]
+    input_action = _safe_get_action(state.get("actions"))
     old_page = page.url
     input_actions_taken = []
 
@@ -958,7 +1005,7 @@ async def click(state: AgentState):
     click_actions_taken = []
     page = state["page"]
     old_page = page.url
-    click_action = state["actions"]["element_actions"]
+    click_action = _safe_get_action(state.get("actions"))
 
     element_type = click_action["action_element"]["type"]
       
@@ -1112,8 +1159,9 @@ async def click(state: AgentState):
                             success = True
 
         except Exception as e:
+            print(f"[DEBUG] Click attempt {attempts} failed with error: {e}")
             if attempts == max_attempts:
-                click_actions_taken.append(f"Failed to click {element_type} after {max_attempts} attempts")
+                click_actions_taken.append(f"Failed to click {element_type} after {max_attempts} attempts: {str(e)}")
                 continue
             await asyncio.sleep(1)  # Brief pause before retry
 
@@ -1203,7 +1251,7 @@ async def respond(state: AgentState):
 
     messages = [SystemMessage(content=system_message), HumanMessage(content=human_message.format(input=input, actions_taken=actions_taken, text_on_page=text_on_page))]
 
-    print(f"[DEBUG] Invoking respond LLM (model: {llm.model}). Prompt messages size: {len(str(messages))} chars...")
+    print(f"[DEBUG] Invoking respond LLM (model: {getattr(llm, 'model_name', 'unknown')}). Prompt messages size: {len(str(messages))} chars...")
     response = llm.invoke(messages)
     print(f"[DEBUG] respond LLM responded successfully.")
 
